@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Wikipedia Smart Editor Pro</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg-primary: #ffffff;
+    --bg-secondary: #f5f5f4;
+    --bg-tertiary: #f0efed;
+    --text-primary: #1a1a18;
+    --text-secondary: #6b6b67;
+    --text-tertiary: #9e9e9a;
+    --border-light: rgba(0,0,0,0.1);
+    --border-mid: rgba(0,0,0,0.18);
+    --border-strong: rgba(0,0,0,0.28);
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --green-bg: #EAF3DE;
+    --green-text: #3B6D11;
+    --red-bg: #FCEBEB;
+    --red-text: #A32D2D;
+    --blue-text: #185FA5;
+    --accent: #1a1a18;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg-primary: #1e1e1c;
+      --bg-secondary: #2a2a28;
+      --bg-tertiary: #242422;
+      --text-primary: #f0ede8;
+      --text-secondary: #a0a09a;
+      --text-tertiary: #6b6b67;
+      --border-light: rgba(255,255,255,0.08);
+      --border-mid: rgba(255,255,255,0.14);
+      --border-strong: rgba(255,255,255,0.22);
+      --green-bg: #173404;
+      --green-text: #C0DD97;
+      --red-bg: #501313;
+      --red-text: #F7C1C1;
+      --blue-text: #85B7EB;
+      --accent: #f0ede8;
+    }
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    min-height: 100vh;
+    padding: 24px 16px 48px;
+  }
+
+  .app {
+    max-width: 720px;
+    margin: 0 auto;
+  }
+
+  .header {
+    margin-bottom: 24px;
+  }
+  .header h1 {
+    font-size: 22px;
+    font-weight: 500;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .header h1 .icon {
+    width: 32px; height: 32px;
+    background: var(--bg-secondary);
+    border: 0.5px solid var(--border-light);
+    border-radius: var(--radius-md);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+  }
+  .header p {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-top: 6px;
+    line-height: 1.5;
+  }
+
+  .card {
+    background: var(--bg-primary);
+    border: 0.5px solid var(--border-light);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    margin-bottom: 12px;
+  }
+
+  .card-title {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 14px;
+  }
+
+  .tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 0.5px solid var(--border-light);
+    margin-bottom: 16px;
+  }
+  .tab {
+    padding: 8px 16px;
+    font-size: 14px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -0.5px;
+    user-select: none;
+    transition: color 0.15s;
+  }
+  .tab:hover { color: var(--text-primary); }
+  .tab.active { color: var(--text-primary); border-bottom-color: var(--text-primary); }
+
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  textarea {
+    width: 100%;
+    resize: vertical;
+    min-height: 110px;
+    font-size: 14px;
+    font-family: inherit;
+    background: var(--bg-secondary);
+    border: 0.5px solid var(--border-light);
+    border-radius: var(--radius-md);
+    padding: 10px 12px;
+    color: var(--text-primary);
+    outline: none;
+    line-height: 1.6;
+    transition: border-color 0.15s;
+  }
+  textarea:focus { border-color: var(--border-strong); background: var(--bg-primary); }
+  textarea::placeholder { color: var(--text-tertiary); }
+
+  input[type="text"] {
+    width: 100%;
+    background: var(--bg-secondary);
+    border: 0.5px solid var(--border-light);
+    border-radius: var(--radius-md);
+    padding: 9px 12px;
+    font-size: 14px;
+    font-family: inherit;
+    color: var(--text-primary);
+    outline: none;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  input[type="text"]:focus { border-color: var(--border-strong); background: var(--bg-primary); }
+  input[type="text"]::placeholder { color: var(--text-tertiary); }
+
+  .input-row { display: flex; gap: 8px; align-items: center; }
+  .input-row input[type="text"] { flex: 1; }
+
+  .btn {
+    padding: 9px 18px;
+    font-size: 14px;
+    font-family: inherit;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    white-space: nowrap;
+    font-weight: 400;
+    transition: opacity 0.15s, background 0.15s, transform 0.1s;
+    line-height: 1;
+  }
+  .btn:active { transform: scale(0.98); }
+
+  .btn-primary {
+    background: var(--text-primary);
+    color: var(--bg-primary);
+    border: none;
+  }
+  .btn-primary:hover { opacity: 0.82; }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+  .btn-outline {
+    background: transparent;
+    border: 0.5px solid var(--border-mid);
+    color: var(--text-primary);
+  }
+  .btn-outline:hover { background: var(--bg-secondary); }
+
+  .btn-ghost {
+    background: transparent;
+    border: 0.5px solid transparent;
+    color: var(--text-tertiary);
+    padding: 6px 10px;
+    font-size: 13px;
+  }
+  .btn-ghost:hover { border-color: var(--border-mid); color: var(--red-text); }
+
+  .extract-hint {
+    font-size: 13px;
+    color: var(--text-tertiary);
+    margin-top: 10px;
+    line-height: 1.5;
+  }
+
+  .list-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .page-count {
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 32px 16px;
+    color: var(--text-tertiary);
+    font-size: 14px;
+    line-height: 1.6;
+  }
+  .empty-icon {
+    font-size: 28px;
+    margin-bottom: 8px;
+    opacity: 0.5;
+  }
+
+  .page-list { margin: 0 -4px; }
+
+  .page-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 4px;
+    border-radius: var(--radius-md);
+    transition: background 0.12s;
+  }
+  .page-item:hover { background: var(--bg-secondary); }
+
+  .page-index {
+    font-size: 12px;
+    color: var(--text-tertiary);
+    width: 22px;
+    text-align: right;
+    flex-shrink: 0;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .page-title-input {
+    flex: 1;
+    background: transparent;
+    border: 0.5px solid transparent;
+    border-radius: var(--radius-md);
+    padding: 6px 8px;
+    font-size: 14px;
+    font-family: inherit;
+    color: var(--text-primary);
+    outline: none;
+    transition: border-color 0.12s, background 0.12s;
+    min-width: 0;
+  }
+  .page-title-input:hover { border-color: var(--border-light); }
+  .page-title-input:focus { border-color: var(--border-mid); background: var(--bg-primary); }
+
+  .word-badge {
+    font-size: 12px;
+    padding: 3px 9px;
+    border-radius: 100px;
+    white-space: nowrap;
+    min-width: 64px;
+    text-align: center;
+    flex-shrink: 0;
+    font-variant-numeric: tabular-nums;
+    background: var(--bg-secondary);
+    color: var(--text-tertiary);
+    border: 0.5px solid var(--border-light);
+  }
+  .word-badge.loaded {
+    background: var(--green-bg);
+    color: var(--green-text);
+    border-color: transparent;
+  }
+  .word-badge.zero {
+    background: var(--red-bg);
+    color: var(--red-text);
+    border-color: transparent;
+  }
+  .word-badge.loading {
+    background: var(--bg-secondary);
+    color: var(--text-tertiary);
+  }
+
+  .wiki-link {
+    font-size: 12px;
+    color: var(--blue-text);
+    text-decoration: none;
+    flex-shrink: 0;
+    opacity: 0;
+    transition: opacity 0.12s;
+  }
+  .page-item:hover .wiki-link { opacity: 1; }
+  .wiki-link:hover { text-decoration: underline; }
+
+  .action-bar {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 0.5px solid var(--border-light);
+  }
+
+  .progress-wrap {
+    width: 100%;
+    height: 3px;
+    background: var(--bg-secondary);
+    border-radius: 2px;
+    margin: 12px 0 0;
+    display: none;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: var(--text-primary);
+    border-radius: 2px;
+    transition: width 0.3s ease;
+  }
+
+  .status-bar {
+    font-size: 13px;
+    color: var(--text-secondary);
+    padding: 8px 0 0;
+    display: none;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .spinner {
+    width: 14px; height: 14px;
+    border: 2px solid var(--border-light);
+    border-top-color: var(--text-primary);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    display: none;
+    flex-shrink: 0;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .results-card { display: none; }
+
+  .metrics {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  .metric {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    padding: 14px;
+    text-align: center;
+  }
+  .metric-label {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+  }
+  .metric-value {
+    font-size: 22px;
+    font-weight: 500;
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+  }
+  .metric-value.small { font-size: 15px; padding-top: 4px; }
+
+  .result-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+  }
+  .result-table th {
+    text-align: left;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 6px 10px;
+    border-bottom: 0.5px solid var(--border-light);
+  }
+  .result-table th:last-child { text-align: right; }
+  .result-table td {
+    padding: 10px 10px;
+    border-bottom: 0.5px solid var(--border-light);
+    color: var(--text-primary);
+  }
+  .result-table tr:last-child td { border-bottom: none; }
+  .result-table td:last-child {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+  }
+  .result-table td:first-child {
+    color: var(--text-tertiary);
+    font-size: 12px;
+    width: 32px;
+  }
+  .result-table tr:hover td { background: var(--bg-secondary); }
+
+  .result-wiki-link {
+    font-size: 12px;
+    color: var(--blue-text);
+    text-decoration: none;
+  }
+  .result-wiki-link:hover { text-decoration: underline; }
+
+  .toast {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(8px);
+    background: var(--text-primary);
+    color: var(--bg-primary);
+    padding: 10px 18px;
+    border-radius: 100px;
+    font-size: 14px;
+    opacity: 0;
+    transition: opacity 0.2s, transform 0.2s;
+    pointer-events: none;
+    z-index: 999;
+    white-space: nowrap;
+  }
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  @media (max-width: 480px) {
+    .metrics { grid-template-columns: 1fr 1fr; }
+    .metrics .metric:last-child { grid-column: span 2; }
+    body { padding: 16px 12px 40px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <div class="header">
+    <h1>
+      <span class="icon">W</span>
+      Wikipedia word counter
+    </h1>
+    <p>Analyze word counts across Bengali Wikipedia articles. Add articles individually or import in bulk.</p>
+  </div>
+
+  <!-- Input card -->
+  <div class="card">
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('single')">Add article</div>
+      <div class="tab" onclick="switchTab('bulk')">Bulk import</div>
+    </div>
+
+    <div id="tab-single" class="tab-panel active">
+      <div class="input-row">
+        <input type="text" id="singleInput" placeholder="Article title or Wikipedia URL..." onkeydown="if(event.key==='Enter') addSingle()" />
+        <button class="btn btn-primary" onclick="addSingle()">Add</button>
+      </div>
+    </div>
+
+    <div id="tab-bulk" class="tab-panel">
+      <textarea id="pasteBox" placeholder="Paste a list of article titles, wiki table rows, or any messy data...&#10;&#10;Supports newlines, commas, pipes, and Wikipedia URLs."></textarea>
+      <div style="display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap;">
+        <button class="btn btn-primary" onclick="autoExtract()">Extract articles</button>
+        <span class="extract-hint">Automatically filters out timestamps, points, and noise</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- List card -->
+  <div class="card">
+    <div class="list-header">
+      <span class="card-title" style="margin:0">Articles</span>
+      <span class="page-count" id="pageCount"></span>
+    </div>
+
+    <div class="page-list" id="list">
+      <div class="empty-state">
+        <div class="empty-icon">📄</div>
+        <div>No articles yet. Add some above to get started.</div>
+      </div>
+    </div>
+
+    <div class="action-bar" id="actionBar" style="display:none;">
+      <button class="btn btn-primary" id="analyzeBtn" onclick="runAll()">Analyze all</button>
+      <button class="btn btn-outline" onclick="clearAll()">Clear list</button>
+      <div class="spinner" id="spinner"></div>
+    </div>
+
+    <div class="progress-wrap" id="progressWrap">
+      <div class="progress-fill" id="progressFill" style="width:0%"></div>
+    </div>
+
+    <div class="status-bar" id="statusBar"></div>
+  </div>
+
+  <!-- Results card -->
+  <div class="card results-card" id="resultsCard">
+    <div class="card-title">Results</div>
+    <div class="metrics" id="metricsRow"></div>
+    <div id="resultsTable"></div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let pages = [];
+let analyzing = false;
+
+/* ---- Tab switch ---- */
+function switchTab(t) {
+  document.querySelectorAll('.tab').forEach((el, i) => {
+    el.classList.toggle('active', (i === 0 && t === 'single') || (i === 1 && t === 'bulk'));
+  });
+  document.getElementById('tab-single').classList.toggle('active', t === 'single');
+  document.getElementById('tab-bulk').classList.toggle('active', t === 'bulk');
+}
+
+/* ---- Toast ---- */
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+/* ---- Text extraction ---- */
+function extractArticlesFromText(text) {
+  const lines = text.split(/[\n,;|]+/);
+  const cleaned = [];
+  for (let line of lines) {
+    line = line.trim();
+    if (!line || line.length < 3) continue;
+    if (/গৃহীত হয়নি|Points|^Article$|Added on|অনুবাদ/.test(line)) continue;
+    if (/^[A-Za-zÀ-ÿ\u0980-\u09FF\s]+:\s*\d/.test(line)) continue;
+    line = line.replace(/https?:\/\/[^\s]+\/wiki\//gi, '');
+    line = line.replace(/\d{1,2}\s+\w+\s+\d{1,2}:\d{2}\s*(AM|PM)?/gi, '');
+    line = line.replace(/:\s*\d+/g, '');
+    line = line.replace(/^\d+[\.\)]\s*/, '');
+    line = line.replace(/\[\[|\]\]/g, '');
+    line = line.trim();
+    if (line.length > 2) cleaned.push(line);
+  }
+  return [...new Set(cleaned)];
+}
+
+/* ---- Wiki cleanup ---- */
+function cleanWiki(text) {
+  text = text.replace(/\{\{[^}]*\}\}/g, '');
+  text = text.replace(/\[\[(?:[^\]|]+\|)?([^\]]+)\]\]/g, '$1');
+  text = text.replace(/={2,}[^=]+=*/g, '');
+  text = text.replace(/<ref[^>]*>[\s\S]*?<\/ref>/gi, '');
+  text = text.replace(/<[^>]+>/g, '');
+  text = text.replace(/'{2,}/g, '');
+  text = text.replace(/\|[^=\n]+=[^\n]*/g, '');
+  return text.trim();
+}
+
+/* ---- Parse title from input ---- */
+function titleFromInput(input) {
+  input = input.trim();
+  try {
+    const url = new URL(input);
+    const m = url.pathname.match(/\/wiki\/(.+)/);
+    if (m) return decodeURIComponent(m[1]).replace(/_/g, ' ');
+  } catch {}
+  return input;
+}
+
+/* ---- Fetch word count from API ---- */
+async function countWords(title) {
+  const url =
+    'https://bn.wikipedia.org/w/api.php?action=query&prop=revisions&rvprop=content&rvslots=main&format=json&origin=*&titles=' +
+    encodeURIComponent(title);
+  try {
+    const res = await fetch(url);
+    const data = await res.json();
+    const pagesData = data.query.pages;
+    for (let id in pagesData) {
+      const page = pagesData[id];
+      if (id === '-1' || !page.revisions) return { words: 0, missing: true };
+      const slots = page.revisions[0].slots;
+      const content = slots ? (slots.main['*'] || '') : (page.revisions[0]['*'] || '');
+      const clean = cleanWiki(content);
+      return { words: clean.split(/\s+/).filter(Boolean).length, missing: false };
+    }
+  } catch (e) {}
+  return { words: 0, missing: false, error: true };
+}
+
+/* ---- Add single article ---- */
+function addSingle() {
+  const raw = document.getElementById('singleInput').value.trim();
+  if (!raw) return;
+  const title = titleFromInput(raw);
+  if (pages.find(p => p.title.toLowerCase() === title.toLowerCase())) {
+    showToast('Already in list');
+    return;
+  }
+  pages.push({ title, words: null, status: 'pending' });
+  document.getElementById('singleInput').value = '';
+  render();
+  showToast('Article added');
+}
+
+/* ---- Bulk extract ---- */
+function autoExtract() {
+  const raw = document.getElementById('pasteBox').value;
+  if (!raw.trim()) return;
+  const extracted = extractArticlesFromText(raw);
+  let added = 0;
+  extracted.forEach(t => {
+    if (!pages.find(p => p.title.toLowerCase() === t.toLowerCase())) {
+      pages.push({ title: t, words: null, status: 'pending' });
+      added++;
+    }
+  });
+  document.getElementById('pasteBox').value = '';
+  render();
+  showToast(added > 0 ? `${added} article${added > 1 ? 's' : ''} added` : 'No new articles found');
+}
+
+/* ---- Update title inline ---- */
+function updateTitle(i, value) {
+  pages[i].title = value;
+  pages[i].words = null;
+  pages[i].status = 'pending';
+}
+
+/* ---- Remove ---- */
+function remove(i) {
+  pages.splice(i, 1);
+  render();
+  renderResults();
+}
+
+/* ---- Clear ---- */
+function clearAll() {
+  if (analyzing) return;
+  pages = [];
+  document.getElementById('resultsCard').style.display = 'none';
+  document.getElementById('statusBar').style.display = 'none';
+  render();
+}
+
+/* ---- Render article list ---- */
+function render() {
+  const div = document.getElementById('list');
+  const bar = document.getElementById('actionBar');
+  const cnt = document.getElementById('pageCount');
+
+  if (pages.length === 0) {
+    div.innerHTML = `<div class="empty-state"><div class="empty-icon">📄</div><div>No articles yet. Add some above to get started.</div></div>`;
+    bar.style.display = 'none';
+    cnt.textContent = '';
+    return;
+  }
+
+  cnt.textContent = `${pages.length} article${pages.length > 1 ? 's' : ''}`;
+  bar.style.display = 'flex';
+
+  div.innerHTML = pages.map((p, i) => {
+    let badgeClass = 'word-badge';
+    let badgeText = '—';
+    if (p.status === 'loading') { badgeClass += ' loading'; badgeText = '...'; }
+    else if (p.status === 'done') {
+      badgeClass += p.words > 0 ? ' loaded' : ' zero';
+      badgeText = p.words > 0 ? p.words.toLocaleString() + ' w' : 'Not found';
+    }
+    const wikiUrl = 'https://bn.wikipedia.org/wiki/' + encodeURIComponent(p.title.replace(/ /g, '_'));
+    const escaped = p.title.replace(/"/g, '&quot;').replace(/</g, '&lt;');
+    return `<div class="page-item">
+      <span class="page-index">${i + 1}</span>
+      <input class="page-title-input" value="${escaped}" oninput="updateTitle(${i}, this.value)" />
+      <span class="${badgeClass}">${badgeText}</span>
+      ${p.status === 'done' ? `<a class="wiki-link" href="${wikiUrl}" target="_blank" rel="noopener">↗ View</a>` : ''}
+      <button class="btn btn-ghost" onclick="remove(${i})" title="Remove article">✕</button>
+    </div>`;
+  }).join('');
+}
+
+/* ---- Render results summary ---- */
+function renderResults() {
+  const card = document.getElementById('resultsCard');
+  const done = pages.filter(p => p.status === 'done' && p.words > 0);
+  if (done.length === 0) { card.style.display = 'none'; return; }
+
+  const total = done.reduce((a, p) => a + p.words, 0);
+  const avg = Math.round(total / done.length);
+  const max = done.reduce((a, p) => p.words > a.words ? p : a, done[0]);
+  const maxLabel = max.title.length > 18 ? max.title.slice(0, 16) + '…' : max.title;
+
+  card.style.display = 'block';
+
+  document.getElementById('metricsRow').innerHTML = `
+    <div class="metric">
+      <div class="metric-label">Total words</div>
+      <div class="metric-value">${total.toLocaleString()}</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Average</div>
+      <div class="metric-value">${avg.toLocaleString()}</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Longest article</div>
+      <div class="metric-value small">${maxLabel}</div>
+    </div>
+  `;
+
+  const sorted = [...done].sort((a, b) => b.words - a.words);
+  document.getElementById('resultsTable').innerHTML = `
+    <table class="result-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Article</th>
+          <th></th>
+          <th>Words</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${sorted.map((p, i) => {
+          const wikiUrl = 'https://bn.wikipedia.org/wiki/' + encodeURIComponent(p.title.replace(/ /g, '_'));
+          return `<tr>
+            <td>${i + 1}</td>
+            <td>${p.title}</td>
+            <td><a class="result-wiki-link" href="${wikiUrl}" target="_blank" rel="noopener">↗</a></td>
+            <td>${p.words.toLocaleString()}</td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>
+  `;
+}
+
+/* ---- Analyze all articles ---- */
+async function runAll() {
+  if (analyzing || pages.length === 0) return;
+  analyzing = true;
+
+  const btn = document.getElementById('analyzeBtn');
+  const spinner = document.getElementById('spinner');
+  const progWrap = document.getElementById('progressWrap');
+  const progFill = document.getElementById('progressFill');
+  const statusBar = document.getElementById('statusBar');
+
+  btn.disabled = true;
+  btn.textContent = 'Analyzing...';
+  spinner.style.display = 'block';
+  progWrap.style.display = 'block';
+  statusBar.style.display = 'flex';
+  progFill.style.width = '0%';
+
+  pages.forEach(p => { p.status = 'pending'; p.words = null; });
+  render();
+
+  for (let i = 0; i < pages.length; i++) {
+    pages[i].status = 'loading';
+    render();
+
+    const pct = Math.round((i / pages.length) * 100);
+    progFill.style.width = pct + '%';
+    statusBar.textContent = `Analyzing ${i + 1} of ${pages.length}: ${pages[i].title}`;
+
+    const result = await countWords(pages[i].title);
+    pages[i].words = result.words;
+    pages[i].status = 'done';
+    render();
+  }
+
+  progFill.style.width = '100%';
+  setTimeout(() => { progWrap.style.display = 'none'; }, 600);
+
+  spinner.style.display = 'none';
+  btn.disabled = false;
+  btn.textContent = 'Analyze all';
+  statusBar.textContent = `Done — ${pages.length} article${pages.length > 1 ? 's' : ''} analyzed`;
+
+  analyzing = false;
+  renderResults();
+}
+
+/* Init */
+render();
+</script>
+
+</body>
+</html>
