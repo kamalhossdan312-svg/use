@@ -48,12 +48,6 @@ progress{
     width:350px;
     height:25px;
 }
-
-#downloadBtn{
-    display:none;
-    color:#00ff88;
-    font-size:18px;
-}
 </style>
 
 </head>
@@ -82,19 +76,21 @@ value="300"
 step="50">
 
 <div>
-<span id="delayValue">300</span> ms
+<span id="delayValue">300 ms</span>
 </div>
 
 <div class="preview">
 <h3>Live Preview</h3>
 
 <img id="previewImage">
+
+<div id="imageInfo"></div>
 </div>
 
 <br>
 
 <button id="generateBtn" disabled>
-Generate GIF
+Generate &amp; Download GIF
 </button>
 
 <br>
@@ -104,12 +100,6 @@ Generate GIF
 <div id="status">
 Upload an image
 </div>
-
-<br>
-
-<a id="downloadBtn" download="flashing.gif">
-Download GIF
-</a>
 
 </div>
 
@@ -126,8 +116,6 @@ const generateBtn = document.getElementById("generateBtn");
 const progressBar = document.getElementById("progressBar");
 const statusText = document.getElementById("status");
 
-const downloadBtn = document.getElementById("downloadBtn");
-
 let originalCanvas;
 let invertedCanvas;
 
@@ -140,7 +128,7 @@ function startPreview(){
 
     clearInterval(previewInterval);
 
-    let showingOriginal = true;
+    let showingOriginal = false;
 
     previewImage.src = originalDataURL;
 
@@ -160,7 +148,8 @@ function startPreview(){
 
 delaySlider.addEventListener("input",()=>{
 
-    delayValue.textContent = delaySlider.value;
+    delayValue.textContent =
+        delaySlider.value + " ms";
 
     if(originalDataURL){
         startPreview();
@@ -178,6 +167,8 @@ fileInput.addEventListener("change",(e)=>{
     const img = new Image();
 
     img.onload = ()=>{
+
+        statusText.textContent = "Creating inverted image...";
 
         originalCanvas = document.createElement("canvas");
         originalCanvas.width = img.width;
@@ -215,12 +206,14 @@ fileInput.addEventListener("change",(e)=>{
 
         invertedDataURL = invertedCanvas.toDataURL();
 
+        document.getElementById("imageInfo").textContent =
+            img.width + " × " + img.height;
+
         startPreview();
 
         generateBtn.disabled = false;
 
-        statusText.textContent =
-            "Preview running. Adjust speed if needed.";
+        statusText.textContent = "Preview ready.";
     };
 
     img.src = URL.createObjectURL(file);
@@ -228,11 +221,11 @@ fileInput.addEventListener("change",(e)=>{
 
 generateBtn.addEventListener("click",()=>{
 
-    progressBar.value = 0;
-    downloadBtn.style.display = "none";
+    generateBtn.disabled = true;
 
-    statusText.textContent =
-        "Creating GIF...";
+    statusText.textContent = "Generating GIF...";
+
+    progressBar.value = 0;
 
     const gif = new GIF({
 
@@ -267,18 +260,31 @@ generateBtn.addEventListener("click",()=>{
 
     gif.on("finished",(blob)=>{
 
-        const url =
-            URL.createObjectURL(blob);
+        statusText.textContent = "Downloading GIF...";
 
-        downloadBtn.href = url;
+        const url = URL.createObjectURL(blob);
 
-        downloadBtn.style.display =
-            "inline-block";
+        const a = document.createElement("a");
+
+        a.href = url;
+        a.download = "flashing.gif";
+
+        document.body.appendChild(a);
+
+        a.click();
+
+        document.body.removeChild(a);
 
         progressBar.value = 100;
 
-        statusText.textContent =
-            "GIF Ready ✓";
+        statusText.textContent = "Done ✓";
+
+        generateBtn.disabled = false;
+
+        setTimeout(()=>{
+            URL.revokeObjectURL(url);
+        },3000);
+
     });
 
     gif.render();
